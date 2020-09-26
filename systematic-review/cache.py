@@ -1,3 +1,6 @@
+from __future__ import annotations
+import bz2
+import pickle
 from search import SearchRequestSource, SearchResponse, SearchRequest
 from source import Source
 from typing import Dict, NoReturn, Set, Union
@@ -47,3 +50,19 @@ class SearchCache(object):
 			])
 			for search_request_response in self.data.values()
 		])
+
+	def dump(self, filename: str, compress: bool = True) -> NoReturn:
+		def get_file():
+			return bz2.BZ2File(filename, 'w') if compress else open(filename, 'wb')
+		with get_file() as out_file:
+			pickle.dump(self.__dict__, out_file)
+
+	@staticmethod
+	def load(filename: str, compress: bool = True) -> SearchCache:
+		def get_file():
+			return bz2.BZ2File(filename, 'r') if compress else open(filename, 'rb')
+
+		with get_file() as in_file:
+			resp = SearchCache()
+			resp.__dict__ = pickle.load(in_file, encoding='bytes')
+			return resp
