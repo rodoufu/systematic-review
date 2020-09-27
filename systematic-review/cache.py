@@ -71,3 +71,6 @@ class SearchCache(object):
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__, default=str)
+
+	def __repr__(self):
+		return self.__str__()

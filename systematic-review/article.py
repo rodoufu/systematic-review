@@ -22,4 +22,7 @@ class Article(object):
 		return text.strip() if text is not None else None
 
 	def __str__(self) -> str:
-		return json.dumps(self.__dict__, default=str)
+		return json.dumps(self.__dict__)
+
+	def __repr__(self):
+		return self.__str__()

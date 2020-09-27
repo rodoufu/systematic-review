@@ -13,8 +13,8 @@ class SearchToken(Enum):
 	def __str__(self) -> str:
 		return self.name
 
-	def __json__(self):
-		return self.name
+	def __repr__(self):
+		return self.__str__()
 
 
 class SearchRequest(object):
@@ -25,6 +25,9 @@ class SearchRequest(object):
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__, default=str)
 
+	def __repr__(self):
+		return self.__str__()
+
 
 class SearchRequestSource(object):
 	def __init__(self, request: SearchRequest, source: Source):
@@ -33,6 +36,9 @@ class SearchRequestSource(object):
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__, default=str)
+
+	def __repr__(self):
+		return self.__str__()
 
 
 class SearchResponse(object):
@@ -44,6 +50,9 @@ class SearchResponse(object):
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__, default=str)
 
+	def __repr__(self):
+		return self.__str__()
+
 
 class SearchEngine(object):
 	def __init__(self):
@@ -51,4 +60,7 @@ class SearchEngine(object):
 		self.requests: Set[SearchRequest] = set()
 
 	def __str__(self) -> str:
-		return json.dumps(self.__dict__, default=str)
+		return json.dumps(self.__dict__)
+
+	def __repr__(self):
+		return self.__str__()
