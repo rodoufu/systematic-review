@@ -8,3 +8,6 @@ class Source(Enum):
 	PubMed = 4
 	Nature = 5
 	ResearchGate = 6
+
+	def __str__(self) -> str:
+		return self.name
