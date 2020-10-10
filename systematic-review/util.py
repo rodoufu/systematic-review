@@ -1,3 +1,4 @@
+import logging
 import unicodedata as ud
 
 
@@ -19,3 +20,10 @@ def rm_diacritics_char(char):
 
 def rm_diacritics(text: str):
 	return "".join([rm_diacritics_char(x) for x in text])
+
+
+def get_logger_child(name: str, logger: logging.Logger = None) -> logging.Logger:
+	if logger:
+		return logger.getChild(name)
+	else:
+		return logging.getLogger(name)

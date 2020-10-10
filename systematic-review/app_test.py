@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import unittest
 from pathlib import Path
@@ -17,12 +18,17 @@ class AppTest(unittest.TestCase):
 	def __init__(self, *args, **kwargs):
 		super(AppTest, self).__init__(*args, **kwargs)
 		load_dotenv(dotenv_path=Path('..') / '.env')
+		logging.basicConfig(
+			format='%(asctime)s %(levelname)s %(filename)s %(lineno)d "%(name)s" "%(message)s"',
+		)
+		self.logger = logging.getLogger("systematic-review")
 
 	def test_env(self):
 		self.assertEqual(os.getenv('TEST'), 'test')
 
 	def test_google_scholar(self):
 		engine = SearchEngine()
+		engine.save_every = 1
 		engine.sources.append(GoogleScholarSearch(use_proxy=False))
 		engine.requests.add(SearchRequest(token=SearchToken.Term, value="BFT"))
 
