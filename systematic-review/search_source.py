@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import json
 import urllib.parse
@@ -7,7 +8,6 @@ from scholarly import scholarly, ProxyGenerator
 from elsapy.elsclient import ElsClient
 from elsapy.elssearch import ElsSearch
 from aiohttp import ClientSession
-
 from search import SearchRequest, SearchResponse, SearchToken, SearchRequestSource, Source
 
 
@@ -21,6 +21,10 @@ class SearchSource(object):
 
 	def __repr__(self):
 		return self.__str__()
+
+	@abc.abstractmethod
+	def source(self) -> Source:
+		pass
 
 
 class GoogleScholarSearch(SearchSource):
@@ -72,6 +76,9 @@ class GoogleScholarSearch(SearchSource):
 				for it in process_publication(pub):
 					yield it
 
+	def source(self) -> Source:
+		return Source.GoogleScholar
+
 
 class ScopusSearch(SearchSource):
 	def __init__(self, config_file_name: str = "config.json"):
@@ -105,6 +112,9 @@ class ScopusSearch(SearchSource):
 			pass
 		elif request.token == SearchToken.Title:
 			pass
+
+	def source(self) -> Source:
+		return Source.Scopus
 
 
 class IEEESearch(SearchSource):
@@ -184,3 +194,6 @@ class IEEESearch(SearchSource):
 		elif request.token == SearchToken.Title:
 			async for it in self.get_all_resources(request=request, params={'article_title': request.value}):
 				yield it
+
+	def source(self) -> Source:
+		return Source.IEEE
