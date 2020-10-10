@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Set
 from article import Article
 from source import Source
 import json
@@ -28,6 +27,12 @@ class SearchRequest(object):
 	def __repr__(self):
 		return self.__str__()
 
+	def __hash__(self):
+		return hash(self.token) + hash(self.value)
+
+	def __eq__(self, other):
+		return type(other) is SearchRequest and self.token == other.token and self.value == other.value
+
 
 class SearchRequestSource(object):
 	def __init__(self, request: SearchRequest, source: Source):
@@ -39,6 +44,12 @@ class SearchRequestSource(object):
 
 	def __repr__(self):
 		return self.__str__()
+
+	def __hash__(self):
+		return hash(self.request) + hash(self.source)
+
+	def __eq__(self, other):
+		return type(other) is SearchRequestSource and self.request == other.request and self.source == other.source
 
 
 class SearchResponse(object):
@@ -53,14 +64,9 @@ class SearchResponse(object):
 	def __repr__(self):
 		return self.__str__()
 
+	def __hash__(self):
+		return hash(self.request_source) + hash(self.article)
 
-class SearchEngine(object):
-	def __init__(self):
-		self.sources: Set[Source] = set()
-		self.requests: Set[SearchRequest] = set()
-
-	def __str__(self) -> str:
-		return json.dumps(self.__dict__)
-
-	def __repr__(self):
-		return self.__str__()
+	def __eq__(self, other):
+		return type(other) is SearchResponse and \
+			self.request_source == other.request_source and self.article == other.article
