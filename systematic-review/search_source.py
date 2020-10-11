@@ -1,14 +1,16 @@
 from __future__ import annotations
 import abc
+import aiohttp
 import json
 import urllib.parse
 from article import Article
-from typing import Iterable, Dict, AsyncIterable
+from typing import Iterable, Dict, AsyncIterable, Optional
 from scholarly import scholarly, ProxyGenerator
 from elsapy.elsclient import ElsClient
 from elsapy.elssearch import ElsSearch
 from aiohttp import ClientSession
 from search import SearchRequest, SearchResponse, SearchToken, SearchRequestSource, Source
+from bs4 import BeautifulSoup
 
 
 class SearchSource(object):
@@ -197,3 +199,121 @@ class IEEESearch(SearchSource):
 
 	def source(self) -> Source:
 		return Source.IEEE
+
+
+def find_class(soup, format):
+	tag_name = format[:format.index('.')]
+	if len(tag_name.strip()) > 0:
+		return soup.find_all(tag_name, class_=lambda x: format[format.index('.') + 1:] in (x or ''))
+	else:
+		return soup.find_all(class_=lambda x: format[format.index('.') + 1:] in (x or ''))
+
+
+class ACMSearch(SearchSource):
+	async def search(self, request: SearchRequest) -> AsyncIterable[SearchResponse]:
+		url = f"https://dl.acm.org/action/doSearch?"
+
+		async def get_response(filter: str, page: int = 0):
+			params = f"fillQuickSearch=false&expand=dl&{filter}&startPage={page}&pageSize=50"
+			async with session.get(f"{url}{params}") as response:
+				response_text = await response.text()
+				soup = BeautifulSoup(response_text, 'html.parser')
+				return soup
+
+		async def get_papers(soup: BeautifulSoup) -> AsyncIterable[SearchResponse]:
+			def text_in_span(tag_item) -> Optional[str]:
+				try:
+					tag_item = tag_item[0]
+				except KeyError:
+					pass
+				except IndexError:
+					return None
+				if tag_item and tag_item.span:
+					return tag_item.span.get_text()
+				return None
+
+			body = find_class(soup, 'ul.items-results')
+			if not body or len(body) != 1:
+				return
+			body = body[0]
+			for it in find_class(body, 'div.issue-item__content'):
+				title = find_class(it, 'h5.issue-item__title')
+				if not title or not title[0].span or not title[0].span.a:
+					continue
+				title = title[0].span.a.get_text()
+
+				abstract = find_class(it, 'div.issue-item__abstract')
+				if abstract and abstract[0].p:
+					abstract = abstract[0].p.get_text()
+				else:
+					abstract = None
+
+				citation = text_in_span(find_class(it, 'span.citation'))
+				downloads = text_in_span(find_class(it, 'span.metric'))
+				doi = text_in_span(find_class(it, 'a.issue-item__doi'))
+				year = None
+				journal = None
+				details = find_class(it, 'div.issue-item__detail')
+				if details:
+					details = details[0]
+					it_year = find_class(details, 'span.dot-separator')
+					if it_year and len(it_year) > 0:
+						it_year = it_year[0]
+						year = text_in_span(it_year)
+						if ' ' in year and ',' in year:
+							year = year[year.index(' ') + 1:year.index(',')]
+						else:
+							year = None
+
+					journal = find_class(details, 'span.epub-section__title')
+					journal = journal[0].get_text() if journal else None
+
+				author = []
+				authors_tag = find_class(it, 'ul.loa')
+				if authors_tag:
+					for it_author in authors_tag[0].find_all('li'):
+						if it_author and it_author.a and it_author.a.span:
+							author.append(it_author.a.span.get_text())
+
+				yield SearchResponse(
+					request_source=SearchRequestSource(
+						request=request,
+						source=Source.ACM,
+					),
+					article=Article(
+						title=title,
+						author=author,
+						year=int(year) if year else None,
+						abstract=abstract,
+						journal=journal,
+						publisher='ACM',
+						citations=int(citation.replace(',', '')) if citation else None,
+						downloads=int(downloads.replace(',', '')) if downloads else None,
+						doi=doi,
+					),
+					raw=None,
+				)
+
+		# return SimpleNamespace(**response_json)
+		async with aiohttp.ClientSession() as session:
+			if request.token == SearchToken.Author:
+				filter = f"field1=ContribAuthor&text1={urllib.parse.quote(request.value)}"
+				soup = await get_response(filter)
+				async for it in get_papers(soup):
+					yield it
+
+			elif request.token == SearchToken.Term:
+				term = f"Abstract:({urllib.parse.quote(request.value)})"
+				filter = f"AllField={term}"
+				soup = await get_response(filter)
+				async for it in get_papers(soup):
+					yield it
+
+			elif request.token == SearchToken.Title:
+				filter = f"field1=Title&text1={urllib.parse.quote(request.value)}"
+				soup = await get_response(filter)
+				async for it in get_papers(soup):
+					yield it
+
+	def source(self) -> Source:
+		return Source.ACM

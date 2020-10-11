@@ -92,8 +92,24 @@ class SearchCache(object):
 					yield resp.article
 
 	def unique_articles(self) -> Iterable[Article]:
-		titles = set()
+		title_article: Dict[str, Article] = {}
 		for it in self.articles():
-			if it.normalized_title not in titles:
-				titles.add(it.normalized_title)
-				yield it
+			if it.normalized_title not in title_article:
+				title_article[it.normalized_title] = it
+			else:
+				title_article[it.normalized_title].merge(it)
+
+		return title_article.values()
+
+	def search_requests(self) -> Set[SearchRequest]:
+		resp = set()
+		for _, request_response in self.data.items():
+			for request in request_response.keys():
+				resp.add(request)
+		return resp
+
+	def sources(self) -> Set[Source]:
+		resp = set()
+		for source in self.data.keys():
+			resp.add(source)
+		return resp
