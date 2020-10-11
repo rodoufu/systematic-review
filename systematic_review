@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+if [[ ! $@ ]]; then
+    python3 -m systematic-review -h
+else
+    python3 -m systematic-review $@
+fi

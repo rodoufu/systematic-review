@@ -12,7 +12,8 @@ setup(
 	url='https://github.com/rodoufu/systematic-review',
 	long_description=long_description,
 	long_description_content_type="text/markdown",
-	packages=find_packages(),
+	packages=find_packages() + ['systematic_review'],
+	scripts=['./'],
 	python_requires='>=3.6',
 	install_requires=open("requirements.txt").readlines(),
 	classifiers=[
