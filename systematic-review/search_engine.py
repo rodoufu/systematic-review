@@ -52,6 +52,7 @@ class SearchEngine(object):
 
 		has_new = [True]
 		while has_new and all(has_new):
+			self.logger.debug(f"Articles: {count_articles}, requests: {[it for it, _ in to_wait]}")
 			has_new = []
 			for search_source, resp in to_wait:
 				try:
@@ -67,6 +68,6 @@ class SearchEngine(object):
 					has_new.append(False)
 			to_wait = [to_wait[i] for i in range(len(to_wait)) if has_new[i]]
 			if self.sleep_between_calls_ms:
-				time.sleep(self.sleep_between_calls_ms)
+				time.sleep(self.sleep_between_calls_ms / 1000.0)
 
 		dump()
