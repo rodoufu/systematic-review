@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+from exporter import CSVExporter
 from search import SearchRequest, SearchToken
 from search_engine import SearchEngine
 from search_source import GoogleScholarSearch, IEEESearch
@@ -44,6 +45,7 @@ def parse_args():
 		'--env-file-name', default=Path('..') / '.env', help='Environment file name',
 	)
 
+	# Sources
 	parser.add_argument(
 		'--source-google-scholar', default=True, help='Use Google Scholar as source',
 	)
@@ -53,6 +55,9 @@ def parse_args():
 	parser.add_argument(
 		'--source-ieee', default=False, help='Use IEEE as source (Requires API key)', action="store_true",
 	)
+
+	# Exporters
+	parser.add_argument('--export-csv', help='Filename for the CSV exporter')
 
 	return parser.parse_args()
 
@@ -102,6 +107,20 @@ async def main():
 		for article in engine.cache.unique_articles():
 			logger.info(f"Article: {article.title}, authors: {article.author}, publisher: {article.publisher}")
 	logger.info(f"{len(engine.cache)} articles in the cache")
+
+	exporters = [
+		(args.export_csv, CSVExporter(';'))
+	]
+	for file_name, exporter in exporters:
+		if file_name:
+			with open(file_name, 'x') as export_csv:
+				async for it in exporter.prefix():
+					export_csv.write(it)
+				for article in engine.cache.unique_articles():
+					async for it in exporter.content(article):
+						export_csv.write(it)
+				async for it in exporter.suffix():
+					export_csv.write(it)
 
 	return 0
 
