@@ -2,9 +2,10 @@ from __future__ import annotations
 import bz2
 import pickle
 import json
+from article import Article
 from search import SearchRequestSource, SearchResponse, SearchRequest
 from source import Source
-from typing import Dict, NoReturn, Set, Union
+from typing import Dict, NoReturn, Set, Union, Iterable
 
 
 class SearchCache(object):
@@ -74,3 +75,16 @@ class SearchCache(object):
 
 	def __repr__(self):
 		return self.__str__()
+
+	def articles(self) -> Iterable[Article]:
+		for responses_set in self.data.values():
+			for responses in responses_set.values():
+				for resp in responses:
+					yield resp.article
+
+	def unique_articles(self) -> Iterable[Article]:
+		titles = set()
+		for it in self.articles():
+			if it.normalized_title not in titles:
+				titles.add(it.normalized_title)
+				yield it

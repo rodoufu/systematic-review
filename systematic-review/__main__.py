@@ -27,13 +27,18 @@ def parse_args():
 	parser.add_argument(
 		'--sleep-between-calls', default=100, help='Time (ms) to sleep between calls'
 	)
+	parser.add_argument('--list-articles', default=False, help='List the articles found', action="store_true")
+	parser.add_argument('--list-cache', default=False, help='List the articles in the cache', action="store_true")
+	# Searches
+	parser.add_argument('--term', action='append', help='Search terms')
+	parser.add_argument('--title', action='append', help='Search titles')
+	parser.add_argument('--author', action='append', help='Search titles')
 
 	# Cache arguments
 	parser.add_argument(
-		'--cache-save-every', default=1,
-		help='Save cache every new requests',
+		'--cache-save-every', default=10, help='Save cache every new requests',
 	)
-	parser.add_argument('--cache-compress', default=False, help='Compress cache')
+	parser.add_argument('--cache-compress', default=False, help='Compress cache', action="store_true")
 	parser.add_argument('--cache-file-name', default='cache.sr', help='Cache file name')
 	parser.add_argument(
 		'--env-file-name', default=Path('..') / '.env', help='Environment file name',
@@ -43,10 +48,10 @@ def parse_args():
 		'--source-google-scholar', default=True, help='Use Google Scholar as source',
 	)
 	parser.add_argument(
-		'--google-scholar-use-proxy', default=False, help='Google Scholar should use proxy',
+		'--google-scholar-use-proxy', default=False, help='Google Scholar should use proxy', action="store_true",
 	)
 	parser.add_argument(
-		'--source-ieee', default=False, help='Use IEEE as source (Requires API key)',
+		'--source-ieee', default=False, help='Use IEEE as source (Requires API key)', action="store_true",
 	)
 
 	return parser.parse_args()
@@ -69,15 +74,36 @@ async def main():
 	engine.cache_file_name = args.cache_file_name
 	engine.sleep_between_calls_ms = args.sleep_between_calls
 
-	# if args.source_google_scholar:
-	# 	engine.sources.append(GoogleScholarSearch(use_proxy=args.google_scholar_use_proxy))
+	if args.source_google_scholar:
+		engine.sources.append(GoogleScholarSearch(use_proxy=args.google_scholar_use_proxy))
 	if args.source_ieee:
-		engine.sources.append(IEEESearch(api_key=os.getenv('IEE_API_KEY')))
+		ieee_api_key = os.getenv('IEE_API_KEY')
+		if not ieee_api_key:
+			logger.critical("Application is missing IEEE API key")
+			return -1
+		engine.sources.append(IEEESearch(api_key=ieee_api_key))
 
-	# TODO send terms here
-	engine.requests.add(SearchRequest(token=SearchToken.Term, value="BFT"))
+	for term in args.term or []:
+		engine.requests.add(SearchRequest(token=SearchToken.Term, value=term))
+	for author in args.author or []:
+		engine.requests.add(SearchRequest(token=SearchToken.Author, value=author))
+	for title in args.title or []:
+		engine.requests.add(SearchRequest(token=SearchToken.Title, value=title))
 
 	await engine.run()
+
+	if args.list_articles:
+		for article in engine.found_articles():
+			logger.info(f"Article: {article.title}, authors: {article.author}, publisher: {article.publisher}")
+
+	logger.info(f"Found {len(engine.found_titles)} articles")
+
+	if args.list_cache:
+		for article in engine.cache.unique_articles():
+			logger.info(f"Article: {article.title}, authors: {article.author}, publisher: {article.publisher}")
+	logger.info(f"{len(engine.cache)} articles in the cache")
+
+	return 0
 
 
 if __name__ == '__main__':

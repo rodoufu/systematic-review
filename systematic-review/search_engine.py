@@ -2,10 +2,11 @@ import json
 import logging
 import os.path
 import time
+from article import Article
 from cache import SearchCache
 from search import SearchRequest, SearchRequestSource
 from search_source import SearchSource
-from typing import Set, List, Optional
+from typing import Set, List, Optional, Iterable
 from util import get_logger_child
 
 
@@ -19,6 +20,7 @@ class SearchEngine(object):
 		self.compress: bool = True
 		self.cache_file_name = cache_file_name
 		self.cache: Optional[SearchCache] = None
+		self.found_titles: Set[str] = set()
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__)
@@ -58,16 +60,25 @@ class SearchEngine(object):
 				try:
 					it = await resp.__anext__()
 					self.cache[search_source] = it
+					self.found_titles.add(it.article.normalized_title)
 					count_articles += 1
 					has_new.append(True)
 
 					if self.save_every and count_articles % self.save_every == 0:
 						dump()
-				except StopIteration:
+				except (StopIteration, StopAsyncIteration):
 					self.logger.info(f"No more results for {search_source}")
+					has_new.append(False)
+				except Exception as e:
+					self.logger.exception(f"There was a problem with the iterator for {search_source}")
 					has_new.append(False)
 			to_wait = [to_wait[i] for i in range(len(to_wait)) if has_new[i]]
 			if self.sleep_between_calls_ms:
 				time.sleep(self.sleep_between_calls_ms / 1000.0)
 
 		dump()
+
+	def found_articles(self) -> Iterable[Article]:
+		for article in self.cache.unique_articles():
+			if article.normalized_title in self.found_titles:
+				yield article
