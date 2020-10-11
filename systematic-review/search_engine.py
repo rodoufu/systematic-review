@@ -46,6 +46,8 @@ class SearchEngine(object):
 				search_source = SearchRequestSource(request, source.source())
 				if search_source not in self.cache:
 					to_wait += [(search_source, source.search(request))]
+				else:
+					self.logger.info(f"Using cache for {request}")
 
 		def dump():
 			self.logger.info(f"Dumping cache of size: {len(self.cache)}")
