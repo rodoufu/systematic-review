@@ -42,7 +42,7 @@ def parse_args():
 		'--cache-save-every', default=10, help='Saves cache every new requests',
 	)
 	parser.add_argument('--cache-compress', default=False, help='Compress cache', action="store_true")
-	parser.add_argument('--cache-file-name', default='cache.sr', help='Cache file name')
+	parser.add_argument('--cache-file-name', default='data/cache.sr', help='Cache file name')
 	parser.add_argument(
 		'--env-file-name', default=Path('..') / '.env', help='Environment file name',
 	)

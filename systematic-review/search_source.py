@@ -83,7 +83,7 @@ class GoogleScholarSearch(SearchSource):
 
 
 class ScopusSearch(SearchSource):
-	def __init__(self, config_file_name: str = "config.json"):
+	def __init__(self, config_file_name: str = "config/config.json"):
 		with open(config_file_name) as con_file:
 			config = json.load(con_file)
 			self.client = ElsClient(config['apikey'])

@@ -11,7 +11,7 @@ from util import get_logger_child
 
 
 class SearchEngine(object):
-	def __init__(self, cache_file_name: str = "cache.sr", logger: logging.Logger = None):
+	def __init__(self, cache_file_name: str = "data/cache.sr", logger: logging.Logger = None):
 		self.logger = get_logger_child(type(self).__name__, logger)
 		self.save_every: Optional[int] = 100
 		self.sleep_between_calls_ms: Optional[int] = 100
