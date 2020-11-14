@@ -3,6 +3,7 @@ import bz2
 import pickle
 import json
 from article import Article
+from author import Author
 from search import SearchRequestSource, SearchResponse, SearchRequest
 from source import Source
 from typing import Dict, NoReturn, Set, Union, Iterable
@@ -12,6 +13,7 @@ class SearchCache(object):
 	def __init__(self, ignore_case: bool = True):
 		self.ignore_case = ignore_case
 		self.data: Dict[Source, Dict[SearchRequest, Set[SearchResponse]]] = {}
+		self.authors: Dict[str, Author] = {}
 
 	def __contains__(self, item: SearchRequestSource) -> bool:
 		try:
@@ -113,3 +115,9 @@ class SearchCache(object):
 		for source in self.data.keys():
 			resp.add(source)
 		return resp
+
+	def add_author(self, author: Author):
+		if author.normalized_name in self.authors:
+			self.authors[author.normalized_name].merge(author)
+		else:
+			self.authors[author.normalized_name] = author

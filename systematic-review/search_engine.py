@@ -55,6 +55,8 @@ class SearchEngine(object):
 					to_wait += [(search_source, source.search(request))]
 				else:
 					self.logger.info(f"Source: {source} is using cache for {request}")
+				for author in source.found_authors():
+					self.cache.add_author(author)
 
 		def dump():
 			self.logger.info(f"Dumping cache of size: {len(self.cache)}")

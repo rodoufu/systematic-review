@@ -40,3 +40,7 @@ def normalize_text(text: str) -> str:
 	return rm_diacritics(format_text(text.strip().lower())).translate(
 		str.maketrans('', '', string.punctuation)
 	)
+
+
+def empty_text(text: str) -> bool:
+	return not text or (len(text.strip()) == 0)

@@ -4,7 +4,8 @@ import aiohttp
 import json
 import urllib.parse
 from article import Article
-from typing import Iterable, Dict, AsyncIterable, Optional
+from author import Author
+from typing import Iterable, Dict, AsyncIterable, Optional, List
 from scholarly import scholarly, ProxyGenerator
 from elsapy.elsclient import ElsClient
 from elsapy.elssearch import ElsSearch
@@ -14,6 +15,9 @@ from bs4 import BeautifulSoup
 
 
 class SearchSource(object):
+	def __init__(self):
+		self.__found_authors: List[Author] = []
+
 	@abc.abstractmethod
 	async def search(self, request: SearchRequest) -> AsyncIterable[SearchResponse]:
 		pass
@@ -28,11 +32,21 @@ class SearchSource(object):
 	def source(self) -> Source:
 		pass
 
+	def found_authors(self) -> Iterable[Author]:
+		while self.__found_authors:
+			yield self.__found_authors[-1]
+			self.__found_authors.pop()
+
+	def _add_author(self, author: Author):
+		self.__found_authors.append(author)
+
 
 class GoogleScholarSearch(SearchSource):
 	__is_using_proxy = False
 
 	def __init__(self, use_proxy: bool = True):
+		super().__init__()
+		self.__found_authors: List[Author] = []
 		if use_proxy and not GoogleScholarSearch.__is_using_proxy:
 			pg = ProxyGenerator()
 			pg.FreeProxies()
@@ -61,6 +75,10 @@ class GoogleScholarSearch(SearchSource):
 
 		def process_author(author) -> Iterable[SearchResponse]:
 			author.fill()
+			self._add_author(GoogleScholarSearch.build_author(author))
+			for author_it in author.get('coauthors', []):
+				self._add_author(GoogleScholarSearch.build_author(author_it))
+
 			for pub in author.publications:
 				for it in process_publication(pub):
 					yield it
@@ -81,9 +99,17 @@ class GoogleScholarSearch(SearchSource):
 	def source(self) -> Source:
 		return Source.GoogleScholar
 
+	@staticmethod
+	def build_author(author) -> Author:
+		return Author(
+			name=author.get('name'), affiliation=author.get('affiliation'), citations=author.get('citedby'),
+			interests=author.get('interests'), h_index=author.get('hindex'), i10_index=author.get('i10index'),
+		)
+
 
 class ScopusSearch(SearchSource):
 	def __init__(self, config_file_name: str = "config/config.json"):
+		super().__init__()
 		with open(config_file_name) as con_file:
 			config = json.load(con_file)
 			self.client = ElsClient(config['apikey'])
@@ -121,6 +147,7 @@ class ScopusSearch(SearchSource):
 
 class IEEESearch(SearchSource):
 	def __init__(self, api_key: str):
+		super().__init__()
 		self.api_key = api_key
 		self.api_version = 'v1'
 		self.protocol = 'https'

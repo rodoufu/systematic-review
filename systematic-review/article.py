@@ -1,14 +1,15 @@
 from __future__ import annotations
 import json
 from typing import List, Optional
-from util import format_text, normalize_text
+from util import format_text, normalize_text, empty_text
 
 
 class Article(object):
 	def __init__(
 			self, title: str, author: List[str], year: Optional[int] = None, abstract: Optional[str] = None,
-			references: Optional[List[Article]] = None, journal: Optional[str] = None, publisher: Optional[str] = None,
+			references: List[Article] = None, journal: Optional[str] = None, publisher: Optional[str] = None,
 			citations: Optional[int] = None, doi: Optional[str] = None, downloads: Optional[int] = None,
+			key_words: List[str] = None,
 	):
 		self.__title = None
 		self.normalized_title = None
@@ -22,6 +23,7 @@ class Article(object):
 		self.citations = citations
 		self.doi = doi
 		self.downloads = downloads
+		self.key_words = [format_text(x) for x in key_words or []]
 
 	@property
 	def title(self) -> str:
@@ -45,31 +47,24 @@ class Article(object):
 		return type(other) is Article and self.normalized_title == other.normalized_title
 
 	def merge(self, other: Article) -> Article:
-		def empty_text(text):
-			return not text or len(text.strip()) == 0
-
-		if empty_text(self.title) == 0:
+		if empty_text(self.title):
 			self.title = other.title
-		if empty_text(self.abstract) == 0:
+		if empty_text(self.abstract):
 			self.abstract = other.abstract
-		if empty_text(self.publisher) == 0:
+		if empty_text(self.publisher):
 			self.publisher = other.publisher
-		if empty_text(self.journal) == 0:
+		if empty_text(self.journal):
 			self.journal = other.journal
-		if empty_text(self.doi) == 0:
+		if empty_text(self.doi):
 			self.doi = other.doi
 
-		if not self.year:
-			self.year = other.year
-		if not self.citations:
-			self.citations = other.citations
-		if not self.downloads:
-			self.downloads = other.downloads
+		self.year = self.year or other.year
+		self.citations = self.citations or other.citations
+		self.downloads = self.downloads or other.downloads
 
 		# lists
-		if not self.author:
-			self.author = [x for x in other.author or []]
-		if not self.references:
-			self.references = [x for x in other.references or []]
+		self.author = [x for x in self.author or other.author or []]
+		self.references = [x for x in self.references or other.references or []]
+		self.key_words = [x for x in self.key_words or other.key_words or []]
 
 		return self
