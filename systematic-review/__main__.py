@@ -72,6 +72,13 @@ def parse_args():
 	# Exporters
 	parser.add_argument('--export-csv', help='Filename for the CSV exporter')
 
+	# TODO test score
+	parser.add_argument(
+		'--score', default='h_index', choices=['citations', 'h_index', 'i10_index'],
+		help='Score method',
+	)
+	parser.add_argument('--score-threshold', default=0, help='Lower bound for the score')
+
 	return parser.parse_args()
 
 
@@ -163,13 +170,15 @@ async def generate_output(args, engine: SearchEngine, logger: logging.Logger):
 	for file_name, exporter in exporters:
 		if file_name:
 			with open(file_name, 'x') as export_csv:
-				async for it in exporter.prefix():
-					export_csv.write(it)
-				for article in engine.cache.unique_articles():
-					async for it in exporter.content(article):
-						export_csv.write(it)
-				async for it in exporter.suffix():
-					export_csv.write(it)
+				# TODO test exporter
+				await exporter.write(export_csv, engine.cache.unique_articles())
+				# async for it in exporter.prefix():
+				# 	export_csv.write(it)
+				# for article in engine.cache.unique_articles():
+				# 	async for it in exporter.content(article):
+				# 		export_csv.write(it)
+				# async for it in exporter.suffix():
+				# 	export_csv.write(it)
 
 	if args.cache_searches:
 		logger.info(f"Searches:")

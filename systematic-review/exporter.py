@@ -1,7 +1,10 @@
 from __future__ import annotations
 import abc
+
+from typing.io import TextIO
+
 from article import Article
-from typing import AsyncIterable
+from typing import AsyncIterable, Iterable
 
 
 class Exporter(object):
@@ -17,6 +20,14 @@ class Exporter(object):
 	async def content(self, article: Article) -> AsyncIterable:
 		raise NotImplementedError()
 
+	async def write(self, out: TextIO, articles: Iterable[Article]):
+		async for it in self.prefix():
+			out.write(it)
+		for article in articles:
+			async for it in self.content(article):
+				out.write(it)
+		async for it in self.suffix():
+			out.write(it)
 
 class CSVExporter(Exporter):
 	def __init__(self, separator: str = ';'):
