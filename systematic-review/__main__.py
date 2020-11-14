@@ -29,7 +29,7 @@ def parse_args():
 
 	# Engine arguments
 	parser.add_argument(
-		'--sleep-between-calls', default=100, help='Time (ms) to sleep between calls'
+		'--sleep-between-calls', default=100.0, type=float, help='Time (ms) to sleep between calls'
 	)
 	parser.add_argument('--list-articles', default=False, help='List the articles found', action="store_true")
 	# Searches
@@ -39,21 +39,22 @@ def parse_args():
 
 	# Cache arguments
 	parser.add_argument(
-		'--cache-save-every', default=10, help='Save cache every new requests',
+		'--cache-save-every', default=10, help='Saves cache every new requests',
 	)
 	parser.add_argument('--cache-compress', default=False, help='Compress cache', action="store_true")
 	parser.add_argument('--cache-file-name', default='cache.sr', help='Cache file name')
 	parser.add_argument(
 		'--env-file-name', default=Path('..') / '.env', help='Environment file name',
 	)
-	parser.add_argument('--compact-cache-file', help='Create a compacted cache file')
-	parser.add_argument('--cache-searches', default=False, help='Print searches in the cache', action="store_true")
-	parser.add_argument('--cache-sources', default=False, help='Print sources in the cache', action="store_true")
-	parser.add_argument('--cache-list', default=False, help='List the articles in the cache', action="store_true")
+	parser.add_argument('--compact-cache-file', help='Creates a compacted cache file')
+	parser.add_argument('--recover-compact-cache-file', help='Recover the cache file form the compacted one')
+	parser.add_argument('--cache-searches', default=False, help='Prints searches in the cache', action="store_true")
+	parser.add_argument('--cache-sources', default=False, help='Prints sources in the cache', action="store_true")
+	parser.add_argument('--cache-list', default=False, help='Lists the articles in the cache', action="store_true")
 
 	# Sources
 	parser.add_argument(
-		'--source-google-scholar', default=False, help='Use Google Scholar as source',
+		'--source-google-scholar', default=False, help='Uses Google Scholar as source',
 	)
 	parser.add_argument(
 		'--google-scholar-use-proxy', default=False, help='Google Scholar should use proxy', action="store_true",
@@ -128,6 +129,11 @@ async def main():
 		logger.info(f"Compressing {args.cache_file_name} into {args.compact_cache_file}")
 		cache = SearchCache.load(args.cache_file_name, compress=False)
 		cache.dump(args.compact_cache_file, compress=True)
+
+	if args.recover_compact_cache_file:
+		logger.info(f"Decompressing {args.recover_compact_cache_file} into {args.cache_file_name}")
+		cache = SearchCache.load(args.recover_compact_cache_file, compress=True)
+		cache.dump(args.cache_file_name, compress=False)
 
 	return 0
 

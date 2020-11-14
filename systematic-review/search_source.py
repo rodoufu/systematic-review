@@ -213,12 +213,18 @@ class ACMSearch(SearchSource):
 	async def search(self, request: SearchRequest) -> AsyncIterable[SearchResponse]:
 		url = f"https://dl.acm.org/action/doSearch?"
 
-		async def get_response(filter: str, page: int = 0):
-			params = f"fillQuickSearch=false&expand=dl&{filter}&startPage={page}&pageSize=50"
+		async def get_response(filter: str, page: int = 0, page_size: int = 50) -> AsyncIterable:
+			params = f"fillQuickSearch=false&expand=dl&{filter}&startPage={page}&pageSize={page_size}"
 			async with session.get(f"{url}{params}") as response:
 				response_text = await response.text()
 				soup = BeautifulSoup(response_text, 'html.parser')
-				return soup
+				yield soup
+
+				results_num = find_class(soup, 'span.hitsLength')
+				results_num = int(results_num[0].strip().replace(',', '')) if results_num else 0
+				if results_num > page_size and page * page_size < results_num:
+					async for it in get_response(filter, page + 1, page_size):
+						yield it
 
 		async def get_papers(soup: BeautifulSoup) -> AsyncIterable[SearchResponse]:
 			def text_in_span(tag_item) -> Optional[str]:
@@ -298,22 +304,22 @@ class ACMSearch(SearchSource):
 		async with aiohttp.ClientSession() as session:
 			if request.token == SearchToken.Author:
 				filter = f"field1=ContribAuthor&text1={urllib.parse.quote(request.value)}"
-				soup = await get_response(filter)
-				async for it in get_papers(soup):
-					yield it
+				async for soup in get_response(filter):
+					async for it in get_papers(soup):
+						yield it
 
 			elif request.token == SearchToken.Term:
 				term = f"Abstract:({urllib.parse.quote(request.value)})"
 				filter = f"AllField={term}"
-				soup = await get_response(filter)
-				async for it in get_papers(soup):
-					yield it
+				async for soup in get_response(filter):
+					async for it in get_papers(soup):
+						yield it
 
 			elif request.token == SearchToken.Title:
 				filter = f"field1=Title&text1={urllib.parse.quote(request.value)}"
-				soup = await get_response(filter)
-				async for it in get_papers(soup):
-					yield it
+				async for soup in get_response(filter):
+					async for it in get_papers(soup):
+						yield it
 
 	def source(self) -> Source:
 		return Source.ACM
