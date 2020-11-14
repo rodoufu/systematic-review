@@ -20,7 +20,7 @@ class SearchSource(object):
 
 	@abc.abstractmethod
 	async def search(self, request: SearchRequest) -> AsyncIterable[SearchResponse]:
-		pass
+		raise NotImplementedError()
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__)
@@ -30,7 +30,7 @@ class SearchSource(object):
 
 	@abc.abstractmethod
 	def source(self) -> Source:
-		pass
+		raise NotImplementedError()
 
 	def found_authors(self) -> Iterable[Author]:
 		while self.__found_authors:

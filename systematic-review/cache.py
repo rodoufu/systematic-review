@@ -6,7 +6,8 @@ from article import Article
 from author import Author
 from search import SearchRequestSource, SearchResponse, SearchRequest
 from source import Source
-from typing import Dict, NoReturn, Set, Union, Iterable
+from typing import Dict, NoReturn, Set, Union, Iterable, Optional
+from util import normalize_text
 
 
 class SearchCache(object):
@@ -121,3 +122,7 @@ class SearchCache(object):
 			self.authors[author.normalized_name].merge(author)
 		else:
 			self.authors[author.normalized_name] = author
+
+	def find_author(self, name: str) -> Optional[Author]:
+		name = normalize_text(name)
+		return self.authors.get(name)

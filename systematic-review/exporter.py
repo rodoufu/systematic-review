@@ -7,15 +7,15 @@ from typing import AsyncIterable
 class Exporter(object):
 	@abc.abstractmethod
 	async def prefix(self) -> AsyncIterable:
-		pass
+		raise NotImplementedError()
 
 	@abc.abstractmethod
 	async def suffix(self) -> AsyncIterable:
-		pass
+		raise NotImplementedError()
 
 	@abc.abstractmethod
 	async def content(self, article: Article) -> AsyncIterable:
-		pass
+		raise NotImplementedError()
 
 
 class CSVExporter(Exporter):
