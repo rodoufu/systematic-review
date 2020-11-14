@@ -1,5 +1,7 @@
 import logging
+import re
 import unicodedata as ud
+from typing import Optional
 
 
 def rm_diacritics_char(char):
@@ -27,3 +29,7 @@ def get_logger_child(name: str, logger: logging.Logger = None) -> logging.Logger
 		return logger.getChild(name)
 	else:
 		return logging.getLogger(name)
+
+
+def format_text(text: Optional[str]) -> Optional[str]:
+	return re.sub(' +', ' ', text.strip().replace('\n', ' ')) if text is not None else None

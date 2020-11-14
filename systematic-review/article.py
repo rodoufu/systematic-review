@@ -1,10 +1,8 @@
 from __future__ import annotations
 import json
 import string
-import re
 from typing import List, Optional
-
-from util import rm_diacritics
+from util import rm_diacritics, format_text
 
 
 class Article(object):
@@ -15,13 +13,13 @@ class Article(object):
 	):
 		self.__title = None
 		self.normalized_title = None
-		self.title = self.format_text(title)
-		self.author = [self.format_text(x) for x in author]
+		self.title = format_text(title)
+		self.author = [format_text(x) for x in author]
 		self.year = year
-		self.abstract = self.format_text(abstract)
+		self.abstract = format_text(abstract)
 		self.references = references or []
-		self.journal = self.format_text(journal)
-		self.publisher = self.format_text(publisher)
+		self.journal = format_text(journal)
+		self.publisher = format_text(publisher)
 		self.citations = citations
 		self.doi = doi
 		self.downloads = downloads
@@ -36,10 +34,6 @@ class Article(object):
 		self.normalized_title = rm_diacritics(value.strip().lower()).translate(
 			str.maketrans('', '', string.punctuation)
 		)
-
-	@staticmethod
-	def format_text(text: Optional[str]) -> Optional[str]:
-		return re.sub(' +', ' ', text.strip().replace('\n', ' ')) if text is not None else None
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__)
