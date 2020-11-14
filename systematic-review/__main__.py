@@ -65,6 +65,9 @@ def parse_args():
 	parser.add_argument(
 		'--source-acm', default=False, help='Use ACM as source', action="store_true",
 	)
+	parser.add_argument(
+		'--ignore-cache', default=False, help='Ignore the cache for the selected sources', action="store_true",
+	)
 
 	# Exporters
 	parser.add_argument('--export-csv', help='Filename for the CSV exporter')
@@ -86,6 +89,8 @@ def build_search_engine(logger: logging.Logger, args) -> Optional[SearchEngine]:
 	engine.compress = args.cache_compress
 	engine.cache_file_name = args.cache_file_name
 	engine.sleep_between_calls_ms = args.sleep_between_calls
+	if args.ignore_cache:
+		engine.ignore_cache = True
 
 	if args.source_google_scholar:
 		engine.sources.append(GoogleScholarSearch(use_proxy=args.google_scholar_use_proxy))

@@ -1,5 +1,6 @@
 import logging
 import re
+import string
 import unicodedata as ud
 from typing import Optional
 
@@ -33,3 +34,9 @@ def get_logger_child(name: str, logger: logging.Logger = None) -> logging.Logger
 
 def format_text(text: Optional[str]) -> Optional[str]:
 	return re.sub(' +', ' ', text.strip().replace('\n', ' ')) if text is not None else None
+
+
+def normalize_text(text: str) -> str:
+	return rm_diacritics(format_text(text.strip().lower())).translate(
+		str.maketrans('', '', string.punctuation)
+	)

@@ -1,8 +1,7 @@
 from __future__ import annotations
 import json
-import string
 from typing import List, Optional
-from util import rm_diacritics, format_text
+from util import format_text, normalize_text
 
 
 class Article(object):
@@ -13,7 +12,7 @@ class Article(object):
 	):
 		self.__title = None
 		self.normalized_title = None
-		self.title = format_text(title)
+		self.title = title
 		self.author = [format_text(x) for x in author]
 		self.year = year
 		self.abstract = format_text(abstract)
@@ -31,9 +30,7 @@ class Article(object):
 	@title.setter
 	def title(self, value: str):
 		self.__title = value
-		self.normalized_title = rm_diacritics(value.strip().lower()).translate(
-			str.maketrans('', '', string.punctuation)
-		)
+		self.normalized_title = normalize_text(value)
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__)

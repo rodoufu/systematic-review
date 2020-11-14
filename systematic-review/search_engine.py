@@ -11,7 +11,10 @@ from util import get_logger_child
 
 
 class SearchEngine(object):
-	def __init__(self, cache_file_name: str = "data/cache.sr", logger: logging.Logger = None):
+	def __init__(
+			self, cache_file_name: str = "data/cache.sr", logger: logging.Logger = None,
+			ignore_cache: bool = False,
+	):
 		self.logger = get_logger_child(type(self).__name__, logger)
 		self.save_every: Optional[int] = 100
 		self.sleep_between_calls_ms: Optional[int] = 100
@@ -21,6 +24,7 @@ class SearchEngine(object):
 		self.cache_file_name = cache_file_name
 		self.cache: Optional[SearchCache] = None
 		self.found_titles: Set[str] = set()
+		self.ignore_cache = ignore_cache
 
 	def __str__(self) -> str:
 		return json.dumps(self.__dict__)
@@ -30,7 +34,10 @@ class SearchEngine(object):
 
 	async def run(self):
 		self.logger.info(f"Starting requests")
-		self.logger.info(f"Sources: {[x.source() for x in self.sources]}")
+		if self.sources:
+			self.logger.info(f"Sources: {[x.source() for x in self.sources]}")
+		else:
+			self.logger.warning("No source was selected")
 		self.logger.info(f"Requests: {[x for x in self.requests]}")
 
 		if not self.cache:
@@ -44,7 +51,7 @@ class SearchEngine(object):
 		for request in self.requests:
 			for source in self.sources:
 				search_source = SearchRequestSource(request, source.source())
-				if search_source not in self.cache:
+				if self.ignore_cache or search_source not in self.cache:
 					to_wait += [(search_source, source.search(request))]
 				else:
 					self.logger.info(f"Source: {source} is using cache for {request}")
@@ -71,7 +78,7 @@ class SearchEngine(object):
 				except (StopIteration, StopAsyncIteration):
 					self.logger.info(f"No more results for {search_source}")
 					has_new.append(False)
-				except Exception as e:
+				except Exception:
 					self.logger.exception(f"There was a problem with the iterator for {search_source}")
 					has_new.append(False)
 			to_wait = [to_wait[i] for i in range(len(to_wait)) if has_new[i]]
